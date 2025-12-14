@@ -1,5 +1,5 @@
 {
-  "refmap": "legacy.refmap.json",
+  "refmap": "legacy_world_sizes.refmap.json",
   "required": true,
   "package": "wily.legacy_world_sizes.mixin.base",
   "compatibilityLevel": "JAVA_17",
