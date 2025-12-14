@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "contributors": [
+    "${mod_credits}"
+  ],
+  "contact": {
+    "sources": "${mod_source}",
+    "issues": "${mod_issues}"
+  },
+  "license": "${mod_license}",
+  "icon": "logo.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "wily.legacy_world_sizes.LegacyWorldSizes::init"
+    ],
+    "client": [
+      "wily.legacy_world_sizes.LegacyWorldSizesClient::init"
+    ]
+  },
+  "accessWidener": "${aw}",
+  "mixins": [
+    "${mod_id}.mixins.json"
+  ],
+  "depends": {
+    "fabric-api": "*",
+    "factory_api": ">=${factory_api_version}",
+    "minecraft": ["${mc_version_range}"]
+  },
+  "suggests": {
+    "factocrafty": ">=0.0.0.6"
+  }
+}

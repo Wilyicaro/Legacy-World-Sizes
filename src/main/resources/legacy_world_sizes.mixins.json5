@@ -1,0 +1,40 @@
+{
+  "refmap": "legacy.refmap.json",
+  "required": true,
+  "package": "wily.legacy_world_sizes.mixin.base",
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "wily.legacy_world_sizes.mixin.LWSMixinPlugin",
+  "client": [
+    "client.CreateWorldScreenMixin",
+    "client.ClientLevelMixin",
+    "client.compat.legacy4j.WorldMoreOptionsScreenMixin"
+  ],
+  "mixins": [
+    "StructureManagerAccessor",
+    "BlenderMixin",
+    "ChunkMapMixin",
+    "EntityMixin",
+    "NoiseBasedChunkGeneratorMixin",
+    "EndDragonFightMixin",
+    "EndIslandDensityFunctionMixin",
+    "TheEndBiomeSourceMixin",
+    "EndCityStructureMixin",
+    "TemplateStructurePieceAccessor",
+    "ChunkAccessAccessor",
+    "ChunkGeneratorStructureStateAccessor",
+    "EndPlatformFeatureMixin",
+    "EndPortalBlockMixin",
+    "StrongholdStructureMixin",
+    "EndGatewayConfigurationMixin",
+    "SpikeFeatureMixin",
+    "EndDragonFightAccessor",
+    "WorldBorderMixin",
+    "MinecraftServerMixin",
+    "ProjectileUtilMixin",
+    "ServerExplosionMixin",
+    "NetherPortalBlockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
