@@ -100,9 +100,12 @@ public class LegacyWorldSizes {
 
     }
 
-    public static void onServerStart(MinecraftServer server) {
+    public static void serverStarting(MinecraftServer server) {
         LWSWorldOptions.WORLD_STORAGE.withServerFile(server, "config/legacy_world_sizes.json").resetAndLoad();
         LWSWorldOptions.setupLegacyWorldSize(server);
+    }
+
+    public static void onServerStart(MinecraftServer server) {
         LWSWorldOptions.setupStrongholdValidPlacement(server);
         LWSWorldOptions.setupEndLimits(server);
     }
