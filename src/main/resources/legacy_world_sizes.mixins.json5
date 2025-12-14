@@ -32,7 +32,8 @@
     "MinecraftServerMixin",
     "ProjectileUtilMixin",
     "ServerExplosionMixin",
-    "NetherPortalBlockMixin"
+    "NetherPortalBlockMixin",
+    "ChunkStatusTasksMixin"
   ],
   "injectors": {
     "defaultRequire": 1

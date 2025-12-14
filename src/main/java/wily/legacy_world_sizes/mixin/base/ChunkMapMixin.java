@@ -85,24 +85,6 @@ public abstract class ChunkMapMixin {
         }
     }
 
-    @WrapOperation(method = "applyStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/status/ChunkStep;apply(Lnet/minecraft/world/level/chunk/status/WorldGenContext;Lnet/minecraft/util/StaticCache2D;Lnet/minecraft/world/level/chunk/ChunkAccess;)Ljava/util/concurrent/CompletableFuture;"))
-    private CompletableFuture<ChunkAccess> applyBedrockBarrierStep(ChunkStep instance, WorldGenContext worldGenContext, StaticCache2D<GenerationChunkHolder> staticCache2D, ChunkAccess chunkAccess, Operation<CompletableFuture<ChunkAccess>> original) {
-        if (instance.targetStatus() == ChunkStatus.FEATURES) {
-            LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(level.dimension());
-            if (limit != null && limit.bedrockBarrier()) {
-                for (LegacyLevelLimit.ChunkBounds bounds : limit.bounds()) {
-                    if (bounds.isInsideBorder(chunkAccess.getPos().x, chunkAccess.getPos().z)) {
-                        return original.call(instance, worldGenContext, staticCache2D, chunkAccess).thenApply(access -> {
-                            bounds.generateBedrockWalls(chunkAccess, worldGenContext.generator(), randomState());
-                            return chunkAccess;
-                        });
-                    }
-                }
-            }
-        }
-        return original.call(instance, worldGenContext, staticCache2D, chunkAccess);
-    }
-
     @Inject(method = "save", at = @At("HEAD"), cancellable = true)
     private void save(ChunkAccess chunkAccess, CallbackInfoReturnable<Boolean> cir) {
         if (!LWSWorldOptions.isValidPos(level.dimension(), chunkAccess.getPos())) cir.setReturnValue(false);
