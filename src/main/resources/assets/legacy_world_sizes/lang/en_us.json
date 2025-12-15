@@ -1,9 +1,10 @@
 {
   "legacy_world_sizes.options.legacyWorldSize": "World Size",
+  "legacy_world_sizes.options.legacyBiomeScale": "Biome Scale",
   "legacy_world_sizes.options.worldSizes.infinity": "Infinity",
   "legacy_world_sizes.options.worldSizes.classic": "Classic",
   "legacy_world_sizes.options.worldSizes.small": "Small",
   "legacy_world_sizes.options.worldSizes.medium": "Medium",
   "legacy_world_sizes.options.worldSizes.large": "Large",
-  "legacy_world_sizes.options.balancedSeed": "Balanced Seed"
+  "legacy_world_sizes.options.balancedSeed": "Find Balanced Seed"
 }
