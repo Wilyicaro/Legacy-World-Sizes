@@ -12,6 +12,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.util.Mth;
@@ -23,6 +24,7 @@ import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.feature.SpikeFeature;
 import net.minecraft.world.level.levelgen.structure.BuiltinStructureSets;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
@@ -33,9 +35,8 @@ import wily.factoryapi.base.config.FactoryConfig;
 import wily.factoryapi.base.config.FactoryConfigControl;
 import wily.factoryapi.base.config.FactoryConfigDisplay;
 import wily.legacy_world_sizes.LegacyWorldSizes;
-import wily.legacy_world_sizes.mixin.base.ChunkGeneratorStructureStateAccessor;
-import wily.legacy_world_sizes.mixin.base.StructureManagerAccessor;
-import wily.legacy_world_sizes.mixin.base.EndDragonFightAccessor;
+import wily.legacy_world_sizes.mixin.base.*;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 import wily.legacy_world_sizes.util.LegacyWSComponents;
 import wily.legacy_world_sizes.util.LegacyWorldSize;
@@ -84,12 +85,12 @@ public class LWSWorldOptions {
 
     public static final List<SpikeFeature.EndSpike> LEGACY_END_SPIKES = createLegacyEndSpikes(8);
 
-    public static <T> FactoryConfig<T> buildAndRegister(UnaryOperator<FactoryConfig.Builder<T>> consumer, UnaryOperator<FactoryConfigDisplay.Builder<T>> displayConsumer) {
-        return consumer.apply(new FactoryConfig.Builder<>()).displayFromKey(t -> displayConsumer.apply(FactoryConfigDisplay.builder()).build(LegacyWSComponents.optionName(t))).buildAndRegister(WORLD_STORAGE);
+    public static <T> FactoryConfig<T> buildAndRegister(UnaryOperator<FactoryConfig.Builder<T>> consumer, FactoryConfigDisplay.Builder<T> builder) {
+        return consumer.apply(new FactoryConfig.Builder<>()).displayFromKey(t -> builder.build(LegacyWSComponents.optionName(t))).buildAndRegister(WORLD_STORAGE);
     }
 
     public static <T> FactoryConfig<T> buildAndRegister(UnaryOperator<FactoryConfig.Builder<T>> consumer) {
-        return buildAndRegister(consumer, UnaryOperator.identity());
+        return buildAndRegister(consumer, FactoryConfigDisplay.builder());
     }
 
     public static final FactoryConfig<Map<ResourceKey<Level>, LegacyLevelLimit>> legacyLevelLimits = buildAndRegister(b -> b.key("legacyLevelLimits").control(() -> LegacyLevelLimit.MAP_CODEC).defaultValue(Collections.emptyMap()));
@@ -102,7 +103,9 @@ public class LWSWorldOptions {
 
     public static final FactoryConfig<Boolean> legacyEndSpikes = buildAndRegister(b -> b.key("legacyEndSpikes").control(FactoryConfigControl.of(Codec.BOOL)).defaultValue(false));
 
-    public static final FactoryConfig<LegacyWorldSize> legacyWorldSize = buildAndRegister(b -> b.key("legacyWorldSize").control(new FactoryConfigControl.FromInt<>(LegacyWorldSize.CODEC, LegacyWorldSize.map::getByIndex, LegacyWorldSize.map::indexOf, LegacyWorldSize.map::size)).defaultValue(LegacyWorldSize.CUSTOM), builder -> builder.valueToComponent(LegacyWorldSize::name));
+    public static final FactoryConfig<Boolean> balancedSeed = buildAndRegister(b -> b.key("balancedSeed").control(FactoryConfigControl.TOGGLE).defaultValue(true), FactoryConfigDisplay.toggleBuilder());
+
+    public static final FactoryConfig<LegacyWorldSize> legacyWorldSize = buildAndRegister(b -> b.key("legacyWorldSize").control(new FactoryConfigControl.FromInt<>(LegacyWorldSize.CODEC, LegacyWorldSize.map::getByIndex, LegacyWorldSize.map::indexOf, LegacyWorldSize.map::size)).defaultValue(LegacyWorldSize.CUSTOM), FactoryConfigDisplay.<LegacyWorldSize>builder().valueToComponent(LegacyWorldSize::name));
 
     public static boolean isValidChunk(LevelChunk chunk) {
         return isValidPos(chunk.getLevel().dimension(), chunk.getPos());
@@ -126,7 +129,7 @@ public class LWSWorldOptions {
         LegacyLevelLimit limit = legacyLevelLimits.get().get(level);
 
         if (limit != null && !limit.bounds().isEmpty()) {
-            for (LegacyLevelLimit.ChunkBounds bounds : limit.bounds()) {
+            for (LegacyChunkBounds bounds : limit.bounds()) {
                 if (bounds.isInside(x, z)) {
                     return true;
                 }
@@ -149,7 +152,7 @@ public class LWSWorldOptions {
         LegacyLevelLimit limit = legacyLevelLimits.get().get(level);
 
         if (limit != null && !limit.bounds().isEmpty()) {
-            for (LegacyLevelLimit.ChunkBounds bounds : limit.bounds()) {
+            for (LegacyChunkBounds bounds : limit.bounds()) {
                 if (bounds.isBorder(x, z)) {
                     return true;
                 }
@@ -170,8 +173,8 @@ public class LWSWorldOptions {
 
         if (limitFrom == null || limitTo == null) return original;
 
-        LegacyLevelLimit.ChunkBounds boundsFrom = limitFrom.bounds().get(0);
-        LegacyLevelLimit.ChunkBounds boundsTo = limitTo.bounds().get(0);
+        LegacyChunkBounds boundsFrom = limitFrom.bounds().get(0);
+        LegacyChunkBounds boundsTo = limitTo.bounds().get(0);
 
         double hypFrom = boundsFrom.hyp();
         double hypTo = boundsTo.hyp();
@@ -179,8 +182,25 @@ public class LWSWorldOptions {
         return hypTo < hypFrom ? Math.max(1d / Math.round(hypFrom / hypTo), original) : Math.min(Math.round(hypTo / hypFrom), original);
     }
 
+    public static void restoreChangedDefaults() {
+        balancedSeed.setDefault(true);
+        legacyWorldSize.setDefault(LegacyWorldSize.CUSTOM);
+        balancedSeed.reset();
+        legacyWorldSize.reset();
+    }
+
     public static void setupLegacyWorldSize(MinecraftServer server) {
         legacyWorldSize.get().applier().accept(new LegacyWorldSize.ApplyContext(server.registryAccess()));
+    }
+
+    public static void setupDedicatedServerBalancedSeed(DedicatedServer server) {
+        if (balancedSeed.get() && server.getProperties() instanceof SettingsAccessor settings && WorldOptions.parseSeed(settings.getString("level-seed", "")).isEmpty()) {
+            LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(Level.OVERWORLD);
+            if (limit != null && server.getProperties() instanceof DedicatedServerPropertiesAccessor accessor) {
+                LegacyChunkBounds bounds = limit.bounds().get(0);
+                accessor.setWorldOptions(server.getProperties().worldOptions.withSeed(OptionalLong.of(bounds.findBalancedSeed(server.registryAccess(), 100))));
+            }
+        }
     }
 
     public static void setupEndLimits(MinecraftServer server) {
@@ -188,8 +208,8 @@ public class LWSWorldOptions {
         LegacyLevelLimit limit = legacyLevelLimits.get().get(Level.END);
 
         if (limit != null && !limit.bounds().isEmpty() && (limit.bounds().size() - 1) != max) {
-            ImmutableList.Builder<LegacyLevelLimit.ChunkBounds> bounds = ImmutableList.builder();
-            LegacyLevelLimit.ChunkBounds chunkBounds = limit.bounds().get(0);
+            ImmutableList.Builder<LegacyChunkBounds> bounds = ImmutableList.builder();
+            LegacyChunkBounds chunkBounds = limit.bounds().get(0);
             bounds.add(chunkBounds);
 
             if (max > 0) {
@@ -216,7 +236,7 @@ public class LWSWorldOptions {
         if (limit != null && end != null && end.getChunkSource().getGeneratorState() instanceof ChunkGeneratorStructureStateAccessor accessor) {
             ImmutableList.Builder<Holder<StructureSet>> structures = ImmutableList.<Holder<StructureSet>>builder().addAll(end.getChunkSource().getGeneratorState().possibleStructureSets());
             for (int i = 1; i < limit.bounds().size(); i++) {
-                LegacyLevelLimit.ChunkBounds bound = limit.bounds().get(i);
+                LegacyChunkBounds bound = limit.bounds().get(i);
                 ChunkPos middle = bound.middle();
                 structures.add(Holder.direct(new StructureSet(server.registryAccess().getOrThrow(BuiltinStructureSets.END_CITIES).value().structures(), new RandomSpreadStructurePlacement(1, 1, RandomSpreadType.LINEAR, 10387313) {
                     @Override
@@ -250,7 +270,7 @@ public class LWSWorldOptions {
             final int minDist = -96;
             final int maxDist = 96;
 
-            for (LegacyLevelLimit.ChunkBounds bound : limit.bounds()) {
+            for (LegacyChunkBounds bound : limit.bounds()) {
                 if (bound.min().x > minDist || bound.min().z > minDist || bound.max().x < maxDist || bound.max().z < maxDist) {
                     Holder<StructureSet> strongholds = server.registryAccess().getOrThrow(BuiltinStructureSets.STRONGHOLDS);
                     List<Holder<StructureSet>> structures = new ArrayList<>(overworld.getChunkSource().getGeneratorState().possibleStructureSets());

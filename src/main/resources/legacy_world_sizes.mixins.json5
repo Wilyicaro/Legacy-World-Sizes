@@ -5,14 +5,14 @@
   "compatibilityLevel": "JAVA_17",
   "plugin": "wily.legacy_world_sizes.mixin.LWSMixinPlugin",
   "client": [
-    "client.CreateWorldScreenMixin",
+    "client.CreateWorldScreenWorldTabMixin",
     "client.ClientLevelMixin",
-    "client.compat.legacy4j.WorldMoreOptionsScreenMixin"
+    "client.compat.legacy4j.WorldMoreOptionsScreenMixin",
+    "client.CreateWorldScreenMixin"
   ],
   "mixins": [
     "StructureManagerAccessor",
     "BlenderMixin",
-    "ChunkMapMixin",
     "EntityMixin",
     "NoiseBasedChunkGeneratorMixin",
     "EndDragonFightMixin",
@@ -33,7 +33,10 @@
     "ProjectileUtilMixin",
     "ServerExplosionMixin",
     "NetherPortalBlockMixin",
-    "ChunkStatusTasksMixin"
+    "ChunkStatusTasksMixin",
+    "ChunkStepMixin",
+    "DedicatedServerPropertiesAccessor",
+    "SettingsAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

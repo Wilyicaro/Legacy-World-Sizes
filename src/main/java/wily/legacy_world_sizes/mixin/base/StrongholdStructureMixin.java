@@ -9,6 +9,7 @@ import net.minecraft.world.level.levelgen.structure.structures.StrongholdStructu
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 
 @Mixin(StrongholdStructure.class)
@@ -19,7 +20,7 @@ public abstract class StrongholdStructureMixin {
         if (original != null && generationContext.heightAccessor() instanceof ChunkAccessAccessor accessor && accessor.getLevelHeightAccessor() instanceof Level level) {
             LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(level.dimension());
             if (limit != null && level.dimension() == Level.OVERWORLD) {
-                for (LegacyLevelLimit.ChunkBounds bound : limit.bounds()) {
+                for (LegacyChunkBounds bound : limit.bounds()) {
                     if (bound.isInside(original.getBoundingBox())) return original;
                 }
                 return null;

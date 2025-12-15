@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 
 import java.util.List;
@@ -22,7 +23,7 @@ public class EntityMixin {
             LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(level.dimension());
 
             if (limit != null && !limit.bounds().isEmpty()) {
-                for (LegacyLevelLimit.ChunkBounds bounds : limit.bounds()) {
+                for (LegacyChunkBounds bounds : limit.bounds()) {
                     if (bounds.isInsideCloseToBorder(entity, aabb)) {
                         instance.add(bounds.shape());
                     }

@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import wily.legacy_world_sizes.LegacyWorldSizes;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 
 @Mixin(EndDragonFight.class)
@@ -44,7 +45,7 @@ public abstract class EndDragonFightMixin {
             int ray = 96;
 
             if (limit != null) {
-                LegacyLevelLimit.ChunkBounds mainBound = limit.bounds().get(0);
+                LegacyChunkBounds mainBound = limit.bounds().get(0);
                 ray = Math.min(Math.min(mainBound.max().x - mainBound.min().x, mainBound.max().z - mainBound.min().z) * 8 - 31, ray);
             }
 
@@ -54,7 +55,7 @@ public abstract class EndDragonFightMixin {
             int k = Mth.floor(ray * Math.sin(2.0 * (-Math.PI + (Math.PI / LWSWorldOptions.maxEndGateways.get()) * i)));
             BlockPos gatewayPos = new BlockPos(j, 75, k);
             if (limit != null && limit.bounds().size() > i) {
-                LegacyLevelLimit.ChunkBounds chunkBounds = limit.bounds().get(i + 1);
+                LegacyChunkBounds chunkBounds = limit.bounds().get(i + 1);
                 BlockPos blockPos2 = chunkBounds.findOrCreateValidTeleportPos(level).above(10);
                 Feature.END_GATEWAY.place(EndGatewayConfiguration.knownExit(blockPos2, false), level, level.getChunkSource().getGenerator(), RandomSource.create(), gatewayPos);
                 LegacyWorldSizes.LOGGER.debug("Creating portal at {}", blockPos2);
@@ -71,7 +72,7 @@ public abstract class EndDragonFightMixin {
         LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(Level.END);
 
         if (skipArenaLoadedCheck || limit == null || limit.bounds().isEmpty()) return;
-        LegacyLevelLimit.ChunkBounds chunkBounds = limit.bounds().get(0);
+        LegacyChunkBounds chunkBounds = limit.bounds().get(0);
 
         for (int i = chunkBounds.min().x; i < chunkBounds.max().x; i++) {
             for (int j = chunkBounds.min().z; j < chunkBounds.max().z; j++) {

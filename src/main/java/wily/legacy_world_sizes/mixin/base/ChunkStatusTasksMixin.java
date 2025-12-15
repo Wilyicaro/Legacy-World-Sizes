@@ -10,6 +10,7 @@ import net.minecraft.world.level.chunk.status.WorldGenContext;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 
 import java.util.concurrent.CompletableFuture;
@@ -20,7 +21,7 @@ public class ChunkStatusTasksMixin {
     private static CompletableFuture<ChunkAccess> generateFeatures(CompletableFuture<ChunkAccess> original, WorldGenContext worldGenContext, ChunkStep chunkStep, StaticCache2D<GenerationChunkHolder> staticCache2D, ChunkAccess chunkAccess) {
         LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(worldGenContext.level().dimension());
         if (limit != null && limit.bedrockBarrier()) {
-            for (LegacyLevelLimit.ChunkBounds bounds : limit.bounds()) {
+            for (LegacyChunkBounds bounds : limit.bounds()) {
                 if (bounds.isInsideBorder(chunkAccess.getPos().x, chunkAccess.getPos().z)) {
                     return original.thenApply(access -> {
                         bounds.generateBedrockWalls(chunkAccess, worldGenContext.generator(), worldGenContext.level().getChunkSource().randomState());

@@ -19,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import wily.legacy_world_sizes.LegacyWorldSizes;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 
 import java.util.List;
@@ -34,7 +35,7 @@ public abstract class EndCityStructureMixin {
             LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(level.dimension());
 
             if (limit != null && level.dimension() == Level.END) {
-                for (LegacyLevelLimit.ChunkBounds bound : limit.bounds()) {
+                for (LegacyChunkBounds bound : limit.bounds()) {
                     if (bound.isInside(generationContext.chunkPos().x, generationContext.chunkPos().z) && bound.middle().equals(generationContext.chunkPos()))
                         return Optional.of(new Structure.GenerationStub(lowest, structurePiecesBuilder -> this.generatePieces(structurePiecesBuilder, lowest, rotation, generationContext)));
                 }
@@ -49,9 +50,9 @@ public abstract class EndCityStructureMixin {
         if (generationContext.heightAccessor() instanceof ChunkAccessAccessor accessor && accessor.getLevelHeightAccessor() instanceof Level level) {
             LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(level.dimension());
             if (limit != null && level.dimension() == Level.END) {
-                LegacyLevelLimit.ChunkBounds bounds = null;
+                LegacyChunkBounds bounds = null;
 
-                for (LegacyLevelLimit.ChunkBounds bound : limit.bounds()) {
+                for (LegacyChunkBounds bound : limit.bounds()) {
                     if (bound.isInside(SectionPos.blockToSectionCoord(blockPos.getX()), SectionPos.blockToSectionCoord(blockPos.getZ()))) {
                         bounds = bound;
                         break;

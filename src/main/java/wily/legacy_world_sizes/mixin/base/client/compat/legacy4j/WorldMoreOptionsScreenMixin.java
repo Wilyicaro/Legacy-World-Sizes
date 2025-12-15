@@ -1,6 +1,5 @@
 package wily.legacy_world_sizes.mixin.base.client.compat.legacy4j;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.network.chat.Component;
@@ -34,5 +33,6 @@ public class WorldMoreOptionsScreenMixin extends PanelVListScreen {
         renderableVList.renderables.add(3, LegacySliderButton.createFromInt(0, 0, 200, 16, (s) -> config.getDisplay().valueToComponent().apply(s.getObjectValue()), (s) -> tooltipFunction.apply(s.getObjectValue()), config.get(), c.valueGetter(), c.valueSetter(), c.valuesSize(), (s) -> FactoryConfig.saveOptionAndConsume(config, s.getObjectValue(), config::setDefault), config));
         renderableVList.renderables.add(3, SimpleLayoutRenderable.createDrawString(config.getDisplay().name(), 1, 2, 0, 9, CommonColor.INVENTORY_GRAY_TEXT.get(), false));
         renderableVList.renderables.add(3, SimpleLayoutRenderable.create(0, 9, (r) -> (guiGraphics, i, j, f) -> {}));
+        renderableVList.renderables.add(3, LegacyConfigWidgets.createWidget(LWSWorldOptions.balancedSeed, 0, 0, 200, LWSWorldOptions.balancedSeed::setDefault));
     }
 }

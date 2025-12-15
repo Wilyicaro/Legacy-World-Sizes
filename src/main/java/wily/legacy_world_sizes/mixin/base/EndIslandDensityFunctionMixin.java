@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 
 @Mixin(targets = {"net.minecraft.world.level.levelgen.DensityFunctions$EndIslandDensityFunction"})
@@ -18,7 +19,7 @@ public class EndIslandDensityFunctionMixin {
         LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(Level.END);
 
         if (limit != null) {
-            for (LegacyLevelLimit.ChunkBounds bound : limit.bounds()) {
+            for (LegacyChunkBounds bound : limit.bounds()) {
                 if (bound.isInside(i / 2, j / 2)) {
 
                     int lx = i - (bound.min().x + bound.max().x);

@@ -2,6 +2,7 @@ package wily.legacy_world_sizes;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
 import org.apache.logging.log4j.LogManager;
@@ -14,6 +15,7 @@ import wily.legacy_world_sizes.config.LegacyWSCommonOptions;
 import wily.legacy_world_sizes.config.LegacyMixinToggles;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
 import wily.legacy_world_sizes.init.LegacyRegistries;
+import wily.legacy_world_sizes.level.FakeLevelChunk;
 
 //? if fabric {
 //?} else if forge {
@@ -83,6 +85,7 @@ public class LegacyWorldSizes {
         FactoryEvent.setup(LegacyWorldSizes::setup);
         FactoryConfig.registerCommonStorage(createModLocation("config"), LWSWorldOptions.WORLD_STORAGE);
         FactoryEvent.serverStarted(LegacyWorldSizes::onServerStart);
+        FactoryEvent.serverStopped(LegacyWorldSizes::onServerStop);
         FactoryEvent.PlayerEvent.JOIN_EVENT.register(LegacyWorldSizes::onServerPlayerJoin);
         FactoryEvent.PlayerEvent.RELOAD_RESOURCES_EVENT.register(LegacyWorldSizes::onResourcesReload);
     }
@@ -103,11 +106,17 @@ public class LegacyWorldSizes {
     public static void serverStarting(MinecraftServer server) {
         LWSWorldOptions.WORLD_STORAGE.withServerFile(server, "config/legacy_world_sizes.json").resetAndLoad();
         LWSWorldOptions.setupLegacyWorldSize(server);
+        if (server instanceof DedicatedServer dedicatedServer)
+            LWSWorldOptions.setupDedicatedServerBalancedSeed(dedicatedServer);
     }
 
     public static void onServerStart(MinecraftServer server) {
         LWSWorldOptions.setupStrongholdValidPlacement(server);
         LWSWorldOptions.setupEndLimits(server);
+    }
+
+    public static void onServerStop(MinecraftServer server) {
+        FakeLevelChunk.ContentType.CACHE.clear();
     }
 
     public static void onResourcesReload(PlayerList playerList) {

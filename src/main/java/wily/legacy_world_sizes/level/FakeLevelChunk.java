@@ -22,7 +22,9 @@ import net.minecraft.world.level.levelgen.blending.BlendingData;
 import net.minecraft.world.ticks.LevelChunkTicks;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class FakeLevelChunk extends LevelChunk {
     private final Holder<Biome> biome;
@@ -30,51 +32,6 @@ public class FakeLevelChunk extends LevelChunk {
     public FakeLevelChunk(ServerLevel level, ChunkPos chunkPos, LevelChunkSection[] sections, boolean hasBlending, Holder<Biome> biome) {
         super(level, chunkPos, UpgradeData.EMPTY, new LevelChunkTicks<>(), new LevelChunkTicks<>(), 0L, sections, null, hasBlending ? BlendingData.unpack(new BlendingData.Packed(SectionPos.blockToSectionCoord(-64), SectionPos.blockToSectionCoord(320), Optional.empty())) : null);
         this.biome = biome;
-    }
-
-    public static ProtoChunk fillChunk(ServerLevel level, ProtoChunk chunk, ContentType contentType) {
-        switch (contentType) {
-            case OCEAN -> {
-                BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-                Heightmap heightmap = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.OCEAN_FLOOR_WG);
-                Heightmap heightmap2 = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE_WG);
-
-                int seaLevel = level.getSeaLevel();
-
-                for (int h = level.getMinY(); h < seaLevel; h++) {
-                    BlockState blockState = h == level.getMinY() ? Blocks.BEDROCK.defaultBlockState() : h > seaLevel - 10 ? Blocks.WATER.defaultBlockState() : Blocks.STONE.defaultBlockState();
-
-                    for (int k = 0; k < 16; k++) {
-                        for (int l = 0; l < 16; l++) {
-                            chunk.setBlockState(mutableBlockPos.set(k, h, l), blockState);
-                            heightmap.update(k, h, l, blockState);
-                            heightmap2.update(k, h, l, blockState);
-                        }
-                    }
-                }
-            }
-            case FLAT -> {
-                BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-                Heightmap heightmap = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.OCEAN_FLOOR_WG);
-                Heightmap heightmap2 = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE_WG);
-
-                int max = level.getMinY() + 4;
-
-                for (int h = level.getMinY(); h < max; h++) {
-                    BlockState blockState = h == level.getMinY() ? Blocks.BEDROCK.defaultBlockState() : h == max - 1 ? Blocks.GRASS_BLOCK.defaultBlockState() : Blocks.DIRT.defaultBlockState();
-
-                    for (int k = 0; k < 16; k++) {
-                        for (int l = 0; l < 16; l++) {
-                            chunk.setBlockState(mutableBlockPos.set(k, h, l), blockState);
-                            heightmap.update(k, h, l, blockState);
-                            heightmap2.update(k, h, l, blockState);
-                        }
-                    }
-                }
-            }
-        }
-
-        return chunk;
     }
 
     @Override
@@ -145,20 +102,75 @@ public class FakeLevelChunk extends LevelChunk {
     }
 
     //TODO: Replace this with something data-driven
-    public enum ContentType implements StringRepresentable {
-        NONE("none"),OCEAN("ocean"),FLAT("flat");
+    public enum ContentType implements StringRepresentable, ContentFiller {
+        NONE("none", (level, chunk) -> chunk),
+        OCEAN("ocean", (level, chunk) -> {
+            BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
+            Heightmap heightmap = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.OCEAN_FLOOR_WG);
+            Heightmap heightmap2 = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE_WG);
+
+            int seaLevel = level.getSeaLevel();
+
+            for (int h = level.getMinY(); h < seaLevel; h++) {
+                BlockState blockState = h == level.getMinY() ? Blocks.BEDROCK.defaultBlockState() : h > seaLevel - 10 ? Blocks.WATER.defaultBlockState() : Blocks.STONE.defaultBlockState();
+
+                for (int k = 0; k < 16; k++) {
+                    for (int l = 0; l < 16; l++) {
+                        chunk.setBlockState(mutableBlockPos.set(k, h, l), blockState);
+                        heightmap.update(k, h, l, blockState);
+                        heightmap2.update(k, h, l, blockState);
+                    }
+                }
+            }
+
+            return chunk;
+        }),
+        FLAT("flat", (level, chunk) -> {
+            BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
+            Heightmap heightmap = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.OCEAN_FLOOR_WG);
+            Heightmap heightmap2 = chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE_WG);
+
+            int max = level.getMinY() + 4;
+
+            for (int h = level.getMinY(); h < max; h++) {
+                BlockState blockState = h == level.getMinY() ? Blocks.BEDROCK.defaultBlockState() : h == max - 1 ? Blocks.GRASS_BLOCK.defaultBlockState() : Blocks.DIRT.defaultBlockState();
+
+                for (int k = 0; k < 16; k++) {
+                    for (int l = 0; l < 16; l++) {
+                        chunk.setBlockState(mutableBlockPos.set(k, h, l), blockState);
+                        heightmap.update(k, h, l, blockState);
+                        heightmap2.update(k, h, l, blockState);
+                    }
+                }
+            }
+
+            return chunk;
+        });
 
         public static final Codec<ContentType> CODEC = StringRepresentable.fromEnum(ContentType::values);
 
-        private final String id;
+        public static final Map<ContentType, ProtoChunk> CACHE = new ConcurrentHashMap<>();
 
-        ContentType(String id) {
+        private final String id;
+        private final ContentFiller filler;
+
+        ContentType(String id, ContentFiller filler) {
             this.id = id;
+            this.filler = filler;
         }
 
         @Override
         public String getSerializedName() {
             return id;
         }
+
+        @Override
+        public ProtoChunk fill(ServerLevel level, ProtoChunk chunk) {
+            return filler.fill(level, chunk);
+        }
+    }
+
+    public interface ContentFiller {
+        ProtoChunk fill(ServerLevel level, ProtoChunk chunk);
     }
 }

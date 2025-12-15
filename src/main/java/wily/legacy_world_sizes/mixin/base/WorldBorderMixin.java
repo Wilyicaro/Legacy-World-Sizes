@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 import wily.legacy_world_sizes.util.LevelWorldBorder;
 
@@ -32,7 +33,7 @@ public class WorldBorderMixin implements LevelWorldBorder {
         if (getLevel() != null && original) {
             LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(getLevel().dimension());
             if (limit != null) {
-                for (LegacyLevelLimit.ChunkBounds bound : limit.bounds()) {
+                for (LegacyChunkBounds bound : limit.bounds()) {
                     if (bound.isInside(d, e, f)) {
                         return true;
                     }
@@ -48,7 +49,7 @@ public class WorldBorderMixin implements LevelWorldBorder {
         if (getLevel() != null) {
             LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(getLevel().dimension());
             if (limit != null) {
-                for (LegacyLevelLimit.ChunkBounds bound : limit.bounds()) {
+                for (LegacyChunkBounds bound : limit.bounds()) {
                     if (!bound.isInside(original.x, original.z, 0))
                         original = new Vec3(Mth.clamp(original.x, bound.min().getMinBlockX(), bound.max().getMinBlockX() - 1.0E-5F), original.y, Mth.clamp(original.z, bound.min().getMinBlockZ(), bound.max().getMinBlockZ() - 1.0E-5F));
                 }

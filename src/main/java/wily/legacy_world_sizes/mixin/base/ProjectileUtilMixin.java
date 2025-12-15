@@ -12,6 +12,7 @@ import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
+import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
 
 @Mixin(ProjectileUtil.class)
@@ -22,7 +23,7 @@ public class ProjectileUtilMixin {
         LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(level.dimension());
         if (limit != null) {
             Vec3 vec3 = original.getLocation();
-            for (LegacyLevelLimit.ChunkBounds bound : limit.bounds()) {
+            for (LegacyChunkBounds bound : limit.bounds()) {
                 if (bound.isInside(vec3.x, vec3.z, 0)) return original;
             }
             return BlockHitResult.miss(original.getLocation(), Direction.UP, BlockPos.ZERO);

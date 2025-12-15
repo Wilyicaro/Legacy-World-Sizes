@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import wily.factoryapi.FactoryAPIClient;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
-import wily.legacy_world_sizes.util.LegacyWorldSize;
 
 public class LegacyWorldSizesClient {
     public static void init() {
@@ -16,7 +15,7 @@ public class LegacyWorldSizesClient {
     }
 
     public static void onDisconnect(LocalPlayer player) {
-        LWSWorldOptions.legacyWorldSize.setDefault(LegacyWorldSize.CUSTOM);
+        LWSWorldOptions.restoreChangedDefaults();
         LWSWorldOptions.WORLD_STORAGE.file = null;
     }
 }
