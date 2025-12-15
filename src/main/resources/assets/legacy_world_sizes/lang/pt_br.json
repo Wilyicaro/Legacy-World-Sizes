@@ -1,0 +1,13 @@
+{
+  "legacy_world_sizes.options.legacyWorldSize": "Tamanho do Mundo",
+  "legacy_world_sizes.options.legacyWorldSize.description": "Seleciona um tamanho de mundo para variar quanto do mundo você pode explorar.",
+  "legacy_world_sizes.options.legacyBiomeScale": "Escala do bioma",
+  "legacy_world_sizes.options.legacyBiomeScale.description": "Seleciona uma escala de bioma para mudar o valor do espaço do mundo que cada bioma ocupará. Escalas maiores geralmente significam biomas em menor quantidade, mas maiores.",
+  "legacy_world_sizes.options.worldSizes.infinity": "Infinito",
+  "legacy_world_sizes.options.worldSizes.classic": "Clássico",
+  "legacy_world_sizes.options.worldSizes.small": "Pequeno",
+  "legacy_world_sizes.options.worldSizes.medium": "Médio",
+  "legacy_world_sizes.options.worldSizes.large": "Grande",
+  "legacy_world_sizes.options.balancedSeed": "Encontrar Semente Equilibrada",
+  "legacy_world_sizes.options.balancedSeed.description": "Se você estiver criando um mundo com uma semente aleatória, essa opção procura um mundo com uma boa combinação de biomas. Desabilitar essa opção pode gerar um mundo de um só bioma!"
+}
