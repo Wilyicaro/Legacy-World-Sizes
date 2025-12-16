@@ -14,7 +14,7 @@ import wily.factoryapi.base.config.FactoryConfig;
 import wily.legacy_world_sizes.config.LegacyWSCommonOptions;
 import wily.legacy_world_sizes.config.LegacyMixinToggles;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
-import wily.legacy_world_sizes.init.LegacyRegistries;
+import wily.legacy_world_sizes.init.LWSRegistries;
 import wily.legacy_world_sizes.level.FakeLevelChunk;
 
 //? if fabric {
@@ -81,7 +81,7 @@ public class LegacyWorldSizes {
     public static void init() {
         FactoryConfig.registerCommonStorage(createModLocation("common"), LegacyWSCommonOptions.COMMON_STORAGE);
         FactoryConfig.registerCommonStorage(createModLocation("mixin_common"), MIXIN_CONFIGS_STORAGE);
-        LegacyRegistries.register();
+        LWSRegistries.register();
         FactoryEvent.setup(LegacyWorldSizes::setup);
         FactoryConfig.registerCommonStorage(createModLocation("config"), LWSWorldOptions.WORLD_STORAGE);
         FactoryEvent.serverStarted(LegacyWorldSizes::onServerStart);
@@ -105,7 +105,7 @@ public class LegacyWorldSizes {
 
     public static void serverStarting(MinecraftServer server) {
         LWSWorldOptions.WORLD_STORAGE.withServerFile(server, "config/legacy_world_sizes.json").resetAndLoad();
-        LWSWorldOptions.setupLegacyWorldSize(server);
+        LWSWorldOptions.setupLegacyWorldSize(server.registryAccess());
         if (server instanceof DedicatedServer dedicatedServer)
             LWSWorldOptions.setupDedicatedServerBalancedSeed(dedicatedServer);
     }

@@ -1,6 +1,6 @@
 package wily.legacy_world_sizes.init;
 
-public class LegacyRegistries {
+public class LWSRegistries {
     public static void register() {
 
     }
