@@ -36,7 +36,10 @@
     "ChunkStatusTasksMixin",
     "ChunkStepMixin",
     "DedicatedServerPropertiesAccessor",
-    "SettingsAccessor"
+    "SettingsAccessor",
+    "ChunkMapMixin",
+    "NoiseParametersMixin",
+    "NormalNoiseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

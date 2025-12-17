@@ -8,6 +8,7 @@ import com.mojang.serialization.DynamicOps;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
@@ -36,10 +37,7 @@ import wily.factoryapi.base.config.FactoryConfigControl;
 import wily.factoryapi.base.config.FactoryConfigDisplay;
 import wily.legacy_world_sizes.LegacyWorldSizes;
 import wily.legacy_world_sizes.mixin.base.*;
-import wily.legacy_world_sizes.util.LegacyChunkBounds;
-import wily.legacy_world_sizes.util.LegacyLevelLimit;
-import wily.legacy_world_sizes.util.LegacyWSComponents;
-import wily.legacy_world_sizes.util.LegacyWorldSize;
+import wily.legacy_world_sizes.util.*;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -103,9 +101,14 @@ public class LWSWorldOptions {
 
     public static final FactoryConfig<Boolean> legacyEndSpikes = buildAndRegister(b -> b.key("legacyEndSpikes").control(FactoryConfigControl.of(Codec.BOOL)).defaultValue(false));
 
-    public static final FactoryConfig<Boolean> balancedSeed = buildAndRegister(b -> b.key("balancedSeed").control(FactoryConfigControl.TOGGLE).defaultValue(true), FactoryConfigDisplay.toggleBuilder());
+    public static final FactoryConfig<Boolean> balancedSeed = buildAndRegister(b -> b.key("balancedSeed").control(FactoryConfigControl.TOGGLE).defaultValue(true), FactoryConfigDisplay.toggleBuilder().tooltip(LegacyWSComponents.staticTooltip(LegacyWSComponents.optionName("balancedSeed.description"))));
 
-    public static final FactoryConfig<LegacyWorldSize> legacyWorldSize = buildAndRegister(b -> b.key("legacyWorldSize").control(new FactoryConfigControl.FromInt<>(LegacyWorldSize.CODEC, LegacyWorldSize.map::getByIndex, LegacyWorldSize.map::indexOf, LegacyWorldSize.map::size)).defaultValue(LegacyWorldSize.CUSTOM), FactoryConfigDisplay.<LegacyWorldSize>builder().valueToComponent(LegacyWorldSize::name));
+    public static final FactoryConfig<LegacyWorldSize> legacyWorldSize = buildAndRegister(b -> b.key("legacyWorldSize").control(new FactoryConfigControl.FromInt<>(LegacyWorldSize.CODEC, LegacyWorldSize.map::getByIndex, LegacyWorldSize.map::indexOf, LegacyWorldSize.map::size)).defaultValue(LegacyWorldSize.CUSTOM), FactoryConfigDisplay.<LegacyWorldSize>builder().valueToComponent(LegacyWorldSize::name).tooltip(LegacyWSComponents.staticTooltip(LegacyWSComponents.optionName("legacyWorldSize.description"))));
+
+    public static final FactoryConfig<LegacyBiomeScale.AddOctave> addToBiomeFirstOctave = buildAndRegister(b -> b.key("addToBiomeFirstOctave").control(FactoryConfigControl.of(LegacyBiomeScale.AddOctave.CODEC)).defaultValue(LegacyBiomeScale.AddOctave.ZERO));
+
+    public static final FactoryConfig<LegacyBiomeScale> legacyBiomeScale = buildAndRegister(b -> b.key("legacyBiomeScale").control(new FactoryConfigControl.FromInt<>(LegacyBiomeScale.CODEC, LegacyBiomeScale.map::getByIndex, LegacyBiomeScale.map::indexOf, LegacyBiomeScale.map::size)).defaultValue(LegacyBiomeScale.CUSTOM), FactoryConfigDisplay.<LegacyBiomeScale>builder().valueToComponent(LegacyBiomeScale::name).tooltip(LegacyWSComponents.staticTooltip(LegacyWSComponents.optionName("legacyBiomeScale.description"))));
+
 
     public static boolean isValidChunk(LevelChunk chunk) {
         return isValidPos(chunk.getLevel().dimension(), chunk.getPos());
@@ -185,12 +188,16 @@ public class LWSWorldOptions {
     public static void restoreChangedDefaults() {
         balancedSeed.setDefault(true);
         legacyWorldSize.setDefault(LegacyWorldSize.CUSTOM);
+        legacyBiomeScale.setDefault(LegacyBiomeScale.CUSTOM);
         balancedSeed.reset();
         legacyWorldSize.reset();
+        legacyBiomeScale.reset();
     }
 
-    public static void setupLegacyWorldSize(MinecraftServer server) {
-        legacyWorldSize.get().applier().accept(new LegacyWorldSize.ApplyContext(server.registryAccess()));
+    public static void setupLegacyWorldSize(RegistryAccess access) {
+        legacyWorldSize.get().applier().accept(new LegacyWorldSize.ApplyContext(access));
+        legacyBiomeScale.get().applyToAddToBiomeFirstOctave();
+        addToBiomeFirstOctave.get().applyToBiomeNoiseParameters(access);
     }
 
     public static void setupDedicatedServerBalancedSeed(DedicatedServer server) {

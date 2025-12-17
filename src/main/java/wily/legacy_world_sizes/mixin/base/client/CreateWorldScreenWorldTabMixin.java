@@ -16,6 +16,7 @@ public class CreateWorldScreenWorldTabMixin {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(CreateWorldScreen createWorldScreen, CallbackInfo ci, @Local GridLayout.RowHelper rowHelper) {
         rowHelper.addChild(FactoryConfigWidgets.createWidget(LWSWorldOptions.balancedSeed, 0, 0, 150, LWSWorldOptions.balancedSeed::setDefault));
+        rowHelper.addChild(FactoryConfigWidgets.createWidget(LWSWorldOptions.legacyBiomeScale, 0, 0, 150, LWSWorldOptions.legacyBiomeScale::setDefault));
         rowHelper.addChild(FactoryConfigWidgets.createWidget(LWSWorldOptions.legacyWorldSize, 0, 0, 308, LWSWorldOptions.legacyWorldSize::setDefault), 2);
     }
 }

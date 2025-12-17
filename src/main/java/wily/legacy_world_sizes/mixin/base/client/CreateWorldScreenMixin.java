@@ -15,7 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
 import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
-import wily.legacy_world_sizes.util.LegacyWorldSize;
 
 import java.util.OptionalLong;
 
@@ -32,7 +31,7 @@ public class CreateWorldScreenMixin {
     @Inject(method = "onCreate", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/worldselection/CreateWorldScreen;createLevelSettings(Z)Lnet/minecraft/world/level/LevelSettings;"))
     private void onCreate(CallbackInfo ci, @Local LayeredRegistryAccess<RegistryLayer> registryAccess) {
         if (uiState.getSeed().isBlank() && LWSWorldOptions.balancedSeed.get()) {
-            LWSWorldOptions.legacyWorldSize.get().applier().accept(new LegacyWorldSize.ApplyContext(registryAccess.compositeAccess()));
+            LWSWorldOptions.setupLegacyWorldSize(registryAccess.compositeAccess());
             LegacyLevelLimit limit = LWSWorldOptions.legacyLevelLimits.get().get(Level.OVERWORLD);
             if (limit != null) {
                 LegacyChunkBounds bounds = limit.bounds().get(0);
