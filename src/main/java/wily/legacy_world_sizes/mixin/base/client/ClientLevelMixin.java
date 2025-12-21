@@ -11,7 +11,7 @@ import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.storage.WritableLevelData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import wily.legacy_world_sizes.util.LevelWorldBorder;
+import wily.legacy_world_sizes.util.LevelHolder;
 
 @Mixin(ClientLevel.class)
 public abstract class ClientLevelMixin extends Level {
@@ -21,6 +21,6 @@ public abstract class ClientLevelMixin extends Level {
 
     @ModifyExpressionValue(method = "<init>", at = @At(value = "NEW", target = "()Lnet/minecraft/world/level/border/WorldBorder;"))
     private WorldBorder createLevels(WorldBorder original) {
-        return LevelWorldBorder.withLevel(original, this);
+        return LevelHolder.withLevel(original, this);
     }
 }

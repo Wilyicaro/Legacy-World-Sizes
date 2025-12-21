@@ -22,11 +22,11 @@ public record LegacyBiomeScale(ResourceLocation id, Component name, Optional<Add
 
     public static final List<ResourceKey<NormalNoise.NoiseParameters>> BIOME_SCALE_NOISE_PARAMETERS = List.of(Noises.TEMPERATURE, Noises.VEGETATION, Noises.CONTINENTALNESS, Noises.EROSION);
 
-    public static final LegacyBiomeScale SMALL = register(new LegacyBiomeScale(LegacyWorldSizes.createModLocation("small"), LegacyWSComponents.optionName("worldSizes.small"), Optional.of(new AddOctave(2))));
+    public static final LegacyBiomeScale SMALL = register(new LegacyBiomeScale(LegacyWorldSizes.createModLocation("small"), LWSComponents.optionName("worldSizes.small"), Optional.of(new AddOctave(2))));
 
-    public static final LegacyBiomeScale MEDIUM = register(new LegacyBiomeScale(LegacyWorldSizes.createModLocation("medium"), LegacyWSComponents.optionName("worldSizes.medium"), Optional.of(new AddOctave(1))));
+    public static final LegacyBiomeScale MEDIUM = register(new LegacyBiomeScale(LegacyWorldSizes.createModLocation("medium"), LWSComponents.optionName("worldSizes.medium"), Optional.of(new AddOctave(1))));
 
-    public static final LegacyBiomeScale CUSTOM = register(new LegacyBiomeScale(LegacyWorldSizes.createModLocation("custom"), LegacyWSComponents.optionName("worldSizes.large"), Optional.empty()));
+    public static final LegacyBiomeScale CUSTOM = register(new LegacyBiomeScale(LegacyWorldSizes.createModLocation("custom"), LWSComponents.optionName("worldSizes.large"), Optional.empty()));
 
     public interface OctaveFunction extends Function<Integer, Integer> {
         default void applyToNoiseParameters(Holder.Reference<NormalNoise.NoiseParameters> noiseParameters) {

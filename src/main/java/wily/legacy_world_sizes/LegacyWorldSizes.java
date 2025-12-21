@@ -11,8 +11,10 @@ import wily.factoryapi.FactoryAPI;
 import wily.factoryapi.FactoryAPIPlatform;
 import wily.factoryapi.FactoryEvent;
 import wily.factoryapi.base.config.FactoryConfig;
-import wily.legacy_world_sizes.config.LegacyWSCommonOptions;
-import wily.legacy_world_sizes.config.LegacyMixinToggles;
+import wily.factoryapi.base.network.CommonConfigSyncPayload;
+import wily.factoryapi.base.network.CommonNetwork;
+import wily.legacy_world_sizes.config.LWSCommonOptions;
+import wily.legacy_world_sizes.config.LWSMixinToggles;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
 import wily.legacy_world_sizes.init.LWSRegistries;
 import wily.legacy_world_sizes.level.FakeLevelChunk;
@@ -39,7 +41,7 @@ public class LegacyWorldSizes {
     public static final String MOD_ID = "legacy_world_sizes";
     public static final Supplier<String> VERSION = () -> FactoryAPIPlatform.getModInfo(MOD_ID).getVersion();
     public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
-    public static final FactoryConfig.StorageHandler MIXIN_CONFIGS_STORAGE = FactoryConfig.StorageHandler.fromMixin(LegacyMixinToggles.COMMON_STORAGE, true);
+    public static final FactoryConfig.StorageHandler MIXIN_CONFIGS_STORAGE = FactoryConfig.StorageHandler.fromMixin(LWSMixinToggles.COMMON_STORAGE, true);
 
     public LegacyWorldSizes() {
         init();
@@ -79,11 +81,10 @@ public class LegacyWorldSizes {
     }
 
     public static void init() {
-        FactoryConfig.registerCommonStorage(createModLocation("common"), LegacyWSCommonOptions.COMMON_STORAGE);
         FactoryConfig.registerCommonStorage(createModLocation("mixin_common"), MIXIN_CONFIGS_STORAGE);
         LWSRegistries.register();
         FactoryEvent.setup(LegacyWorldSizes::setup);
-        FactoryConfig.registerCommonStorage(createModLocation("config"), LWSWorldOptions.WORLD_STORAGE);
+        FactoryConfig.registerCommonStorage(createModLocation("world"), LWSWorldOptions.WORLD_STORAGE);
         FactoryEvent.serverStarted(LegacyWorldSizes::onServerStart);
         FactoryEvent.serverStopped(LegacyWorldSizes::onServerStop);
         FactoryEvent.PlayerEvent.JOIN_EVENT.register(LegacyWorldSizes::onServerPlayerJoin);
@@ -95,24 +96,25 @@ public class LegacyWorldSizes {
     }
 
     public static void setup() {
-        LegacyWSCommonOptions.COMMON_STORAGE.load();
-
+        LWSCommonOptions.COMMON_STORAGE.load();
+        LWSWorldOptions.restoreChangedDefaults();
     }
 
     public static void onServerPlayerJoin(ServerPlayer p) {
-
+        //Workaround to fix the configs not being sync correctly to the client, due to FactoryAPI not forcing to send the common config payloads, don't do this at home
+        CommonNetwork.sendToPlayer(p, CommonConfigSyncPayload.of(CommonConfigSyncPayload.ID_S2C, LWSWorldOptions.WORLD_STORAGE), true);
     }
 
     public static void serverStarting(MinecraftServer server) {
         LWSWorldOptions.WORLD_STORAGE.withServerFile(server, "config/legacy_world_sizes.json").resetAndLoad();
         LWSWorldOptions.setupLegacyWorldSize(server.registryAccess());
+        LWSWorldOptions.setupEndLimits();
         if (server instanceof DedicatedServer dedicatedServer)
             LWSWorldOptions.setupDedicatedServerBalancedSeed(dedicatedServer);
     }
 
     public static void onServerStart(MinecraftServer server) {
-        LWSWorldOptions.setupStrongholdValidPlacement(server);
-        LWSWorldOptions.setupEndLimits(server);
+        LWSWorldOptions.setupMaxEndGateways(server);
     }
 
     public static void onServerStop(MinecraftServer server) {
@@ -120,8 +122,6 @@ public class LegacyWorldSizes {
     }
 
     public static void onResourcesReload(PlayerList playerList) {
-        onServerStart(playerList.getServer());
+        LWSWorldOptions.setupLegacyWorldSize(playerList.getServer().registryAccess());
     }
-
-
 }

@@ -6,35 +6,40 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
 import net.minecraft.Util;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.SectionPos;
+import net.minecraft.core.*;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.LegacyRandomSource;
 import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.feature.SpikeFeature;
 import net.minecraft.world.level.levelgen.structure.BuiltinStructureSets;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
+import net.minecraft.world.level.levelgen.structure.placement.ConcentricRingsStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadType;
 import wily.factoryapi.FactoryAPI;
 import wily.factoryapi.base.config.FactoryConfig;
 import wily.factoryapi.base.config.FactoryConfigControl;
 import wily.factoryapi.base.config.FactoryConfigDisplay;
+import wily.factoryapi.util.DynamicUtil;
 import wily.legacy_world_sizes.LegacyWorldSizes;
 import wily.legacy_world_sizes.mixin.base.*;
 import wily.legacy_world_sizes.util.*;
@@ -63,7 +68,7 @@ public class LWSWorldOptions {
 
         @Override
         public <T> void decodeConfigs(Dynamic<T> dynamic) {
-            super.decodeConfigs(convertToRegistryIfPossible(dynamic));
+            super.decodeConfigs(DynamicUtil.convertToRegistryIfPossible(dynamic));
         }
 
         @Override
@@ -84,7 +89,7 @@ public class LWSWorldOptions {
     public static final List<SpikeFeature.EndSpike> LEGACY_END_SPIKES = createLegacyEndSpikes(8);
 
     public static <T> FactoryConfig<T> buildAndRegister(UnaryOperator<FactoryConfig.Builder<T>> consumer, FactoryConfigDisplay.Builder<T> builder) {
-        return consumer.apply(new FactoryConfig.Builder<>()).displayFromKey(t -> builder.build(LegacyWSComponents.optionName(t))).buildAndRegister(WORLD_STORAGE);
+        return consumer.apply(new FactoryConfig.Builder<>()).displayFromKey(t -> builder.build(LWSComponents.optionName(t))).buildAndRegister(WORLD_STORAGE);
     }
 
     public static <T> FactoryConfig<T> buildAndRegister(UnaryOperator<FactoryConfig.Builder<T>> consumer) {
@@ -101,13 +106,13 @@ public class LWSWorldOptions {
 
     public static final FactoryConfig<Boolean> legacyEndSpikes = buildAndRegister(b -> b.key("legacyEndSpikes").control(FactoryConfigControl.of(Codec.BOOL)).defaultValue(false));
 
-    public static final FactoryConfig<Boolean> balancedSeed = buildAndRegister(b -> b.key("balancedSeed").control(FactoryConfigControl.TOGGLE).defaultValue(true), FactoryConfigDisplay.toggleBuilder().tooltip(LegacyWSComponents.staticTooltip(LegacyWSComponents.optionName("balancedSeed.description"))));
+    public static final FactoryConfig<Boolean> balancedSeed = buildAndRegister(b -> b.key("balancedSeed").control(FactoryConfigControl.TOGGLE).defaultValue(true), FactoryConfigDisplay.toggleBuilder().tooltip(LWSComponents.staticTooltip(LWSComponents.optionName("balancedSeed.description"))));
 
-    public static final FactoryConfig<LegacyWorldSize> legacyWorldSize = buildAndRegister(b -> b.key("legacyWorldSize").control(new FactoryConfigControl.FromInt<>(LegacyWorldSize.CODEC, LegacyWorldSize.map::getByIndex, LegacyWorldSize.map::indexOf, LegacyWorldSize.map::size)).defaultValue(LegacyWorldSize.CUSTOM), FactoryConfigDisplay.<LegacyWorldSize>builder().valueToComponent(LegacyWorldSize::name).tooltip(LegacyWSComponents.staticTooltip(LegacyWSComponents.optionName("legacyWorldSize.description"))));
+    public static final FactoryConfig<LegacyWorldSize> legacyWorldSize = buildAndRegister(b -> b.key("legacyWorldSize").control(new FactoryConfigControl.FromInt<>(LegacyWorldSize.CODEC, LegacyWorldSize.map::getByIndex, LegacyWorldSize.map::indexOf, LegacyWorldSize.map::size)).defaultValue(LegacyWorldSize.CUSTOM), FactoryConfigDisplay.<LegacyWorldSize>builder().valueToComponent(LegacyWorldSize::name).tooltip(LWSComponents.staticTooltip(LWSComponents.optionName("legacyWorldSize.description"))));
 
     public static final FactoryConfig<LegacyBiomeScale.AddOctave> addToBiomeFirstOctave = buildAndRegister(b -> b.key("addToBiomeFirstOctave").control(FactoryConfigControl.of(LegacyBiomeScale.AddOctave.CODEC)).defaultValue(LegacyBiomeScale.AddOctave.ZERO));
 
-    public static final FactoryConfig<LegacyBiomeScale> legacyBiomeScale = buildAndRegister(b -> b.key("legacyBiomeScale").control(new FactoryConfigControl.FromInt<>(LegacyBiomeScale.CODEC, LegacyBiomeScale.map::getByIndex, LegacyBiomeScale.map::indexOf, LegacyBiomeScale.map::size)).defaultValue(LegacyBiomeScale.CUSTOM), FactoryConfigDisplay.<LegacyBiomeScale>builder().valueToComponent(LegacyBiomeScale::name).tooltip(LegacyWSComponents.staticTooltip(LegacyWSComponents.optionName("legacyBiomeScale.description"))));
+    public static final FactoryConfig<LegacyBiomeScale> legacyBiomeScale = buildAndRegister(b -> b.key("legacyBiomeScale").control(new FactoryConfigControl.FromInt<>(LegacyBiomeScale.CODEC, LegacyBiomeScale.map::getByIndex, LegacyBiomeScale.map::indexOf, LegacyBiomeScale.map::size)).defaultValue(LegacyBiomeScale.CUSTOM), FactoryConfigDisplay.<LegacyBiomeScale>builder().valueToComponent(LegacyBiomeScale::name).tooltip(LWSComponents.staticTooltip(LWSComponents.optionName("legacyBiomeScale.description"))));
 
 
     public static boolean isValidChunk(LevelChunk chunk) {
@@ -186,9 +191,9 @@ public class LWSWorldOptions {
     }
 
     public static void restoreChangedDefaults() {
-        balancedSeed.setDefault(true);
-        legacyWorldSize.setDefault(LegacyWorldSize.CUSTOM);
-        legacyBiomeScale.setDefault(LegacyBiomeScale.CUSTOM);
+        balancedSeed.setDefault(LWSCommonOptions.balancedSeed.get());
+        legacyWorldSize.setDefault(LWSCommonOptions.legacyWorldSize.get());
+        legacyBiomeScale.setDefault(LWSCommonOptions.legacyBiomeScale.get());
         balancedSeed.reset();
         legacyWorldSize.reset();
         legacyBiomeScale.reset();
@@ -210,7 +215,7 @@ public class LWSWorldOptions {
         }
     }
 
-    public static void setupEndLimits(MinecraftServer server) {
+    public static void setupEndLimits() {
         int max = maxEndGateways.get();
         LegacyLevelLimit limit = legacyLevelLimits.get().get(Level.END);
 
@@ -234,30 +239,13 @@ public class LWSWorldOptions {
                     bounds.add(chunkBounds.moveTo(x, z));
                 }
             }
-            legacyLevelLimits.set(ImmutableMap.<ResourceKey<Level>, LegacyLevelLimit>builder().putAll(legacyLevelLimits.get()).put(Level.END, limit = limit.withBounds(bounds.build())).buildKeepingLast());
+            legacyLevelLimits.set(ImmutableMap.<ResourceKey<Level>, LegacyLevelLimit>builder().putAll(legacyLevelLimits.get()).put(Level.END, limit.withBounds(bounds.build())).buildKeepingLast());
             legacyLevelLimits.save();
         }
+    }
 
+    public static void setupMaxEndGateways(MinecraftServer server) {
         ServerLevel end = server.getLevel(Level.END);
-
-        if (limit != null && end != null && end.getChunkSource().getGeneratorState() instanceof ChunkGeneratorStructureStateAccessor accessor) {
-            ImmutableList.Builder<Holder<StructureSet>> structures = ImmutableList.<Holder<StructureSet>>builder().addAll(end.getChunkSource().getGeneratorState().possibleStructureSets());
-            for (int i = 1; i < limit.bounds().size(); i++) {
-                LegacyChunkBounds bound = limit.bounds().get(i);
-                ChunkPos middle = bound.middle();
-                structures.add(Holder.direct(new StructureSet(server.registryAccess().getOrThrow(BuiltinStructureSets.END_CITIES).value().structures(), new RandomSpreadStructurePlacement(1, 1, RandomSpreadType.LINEAR, 10387313) {
-                    @Override
-                    public ChunkPos getPotentialStructureChunk(long l, int i, int j) {
-                        return middle;
-                    }
-                })));
-                accessor.setHasGeneratedPositions(false);
-                accessor.getPlacementsForStructure().clear();
-            }
-
-            accessor.setPossibleStructureSets(structures.build());
-        }
-
         if (LWSWorldOptions.maxEndGateways.get() != 20 && end != null && end.getDragonFight() instanceof EndDragonFightAccessor accessor && end.getServer().getWorldData().endDragonFightData().gateways().isEmpty()) {
             accessor.getGateways().clear();
 
@@ -269,37 +257,104 @@ public class LWSWorldOptions {
         }
     }
 
-    public static void setupStrongholdValidPlacement(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        LegacyLevelLimit limit = legacyLevelLimits.get().get(Level.OVERWORLD);
+    public static void setupEndCitiesValidPlacement(Level level, ChunkGeneratorStructureState genState) {
+        LegacyLevelLimit limit = legacyLevelLimits.get().get(Level.END);
 
-        if (limit != null && overworld.getChunkSource().getGeneratorState() instanceof ChunkGeneratorStructureStateAccessor accessor) {
-            final int minDist = -96;
-            final int maxDist = 96;
-
-            for (LegacyChunkBounds bound : limit.bounds()) {
-                if (bound.min().x > minDist || bound.min().z > minDist || bound.max().x < maxDist || bound.max().z < maxDist) {
-                    Holder<StructureSet> strongholds = server.registryAccess().getOrThrow(BuiltinStructureSets.STRONGHOLDS);
-                    List<Holder<StructureSet>> structures = new ArrayList<>(overworld.getChunkSource().getGeneratorState().possibleStructureSets());
-                    if (structures.remove(strongholds)) {
-                        structures.add(Holder.direct(new StructureSet(strongholds.value().structures(), new RandomSpreadStructurePlacement(1, 1, RandomSpreadType.LINEAR, 10387313) {
-                            @Override
-                            public ChunkPos getPotentialStructureChunk(long l, int i, int j) {
-                                RandomSource random = RandomSource.create(accessor.getConcentricRingsSeed());
-                                return new ChunkPos(random.nextInt(bound.min().x + 2, bound.max().x - 2), random.nextInt(bound.min().z + 2, bound.max().z - 2));
-                            }
-
-                            @Override
-                            public boolean isStructureChunk(ChunkGeneratorStructureState chunkGeneratorStructureState, int i, int j) {
-                                return isPlacementChunk(chunkGeneratorStructureState, i, j);
-                            }
-                        })));
+        if (limit != null && level.dimension() == Level.END && genState instanceof ChunkGeneratorStructureStateAccessor accessor) {
+            ImmutableList.Builder<Holder<StructureSet>> structures = ImmutableList.<Holder<StructureSet>>builder().addAll(genState.possibleStructureSets());
+            List<ChunkPos> validPositions = new ArrayList<>();
+            RandomSource random = RandomSource.create(genState.getLevelSeed());
+            for (int i = 1; i < limit.bounds().size(); i++) {
+                if (i > 1 && random.nextBoolean()) continue;
+                validPositions.add(limit.bounds().get(i).middle());
+            }
+            structures.add(Holder.direct(new StructureSet(level.registryAccess().getOrThrow(BuiltinStructureSets.END_CITIES).value().structures(), new RandomSpreadStructurePlacement(1, 1, RandomSpreadType.LINEAR, 10387313) {
+                @Override
+                public ChunkPos getPotentialStructureChunk(long l, int i, int j) {
+                    for (ChunkPos validPosition : validPositions) {
+                        if (validPosition.x == i && validPosition.z == j) return validPosition;
                     }
+                    return validPositions.get(0);
+                }
+            })));
+            accessor.setHasGeneratedPositions(false);
+            accessor.getPlacementsForStructure().clear();
+
+            accessor.setPossibleStructureSets(structures.build());
+        }
+    }
+
+    public static void setupVillagesValidPlacement(Level level, ChunkGeneratorStructureState genState) {
+        if (level.dimension() == Level.OVERWORLD) {
+            setupStructureValidPlacement(legacyLevelLimits.get().get(level.dimension()), level, genState, BuiltinStructureSets.VILLAGES, false);
+        }
+    }
+
+    public static void setupPillagerOutpostsValidPlacement(Level level, ChunkGeneratorStructureState genState) {
+        if (level.dimension() == Level.OVERWORLD) {
+            setupStructureValidPlacement(legacyLevelLimits.get().get(level.dimension()), level, genState, BuiltinStructureSets.PILLAGER_OUTPOSTS, false);
+        }
+    }
+
+    public static void setupWoodlandMansionsValidPlacement(Level level, ChunkGeneratorStructureState genState) {
+        if (level.dimension() == Level.OVERWORLD) {
+            setupStructureValidPlacement(legacyLevelLimits.get().get(level.dimension()), level, genState, BuiltinStructureSets.WOODLAND_MANSIONS, false);
+        }
+    }
+
+    public static void setupStrongholdValidPlacement(Level level, ChunkGeneratorStructureState genState) {
+        if (level.dimension() == Level.OVERWORLD) {
+            setupConcentricStructureValidPlacement(legacyLevelLimits.get().get(level.dimension()), level, genState, BuiltinStructureSets.STRONGHOLDS, level.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(BiomeTags.HAS_STRONGHOLD));
+        }
+    }
+
+    public static void setupNetherComplexesValidPlacement(Level level, ChunkGeneratorStructureState genState) {
+        if (level.dimension() == Level.NETHER) {
+            setupStructureValidPlacement(legacyLevelLimits.get().get(level.dimension()), level, genState, BuiltinStructureSets.NETHER_COMPLEXES, true);
+        }
+    }
+
+    public static void setupStructureValidPlacement(LegacyLevelLimit limit, Level level, ChunkGeneratorStructureState genState, ResourceKey<StructureSet> key, boolean alwaysPlace) {
+        if (limit != null && genState instanceof ChunkGeneratorStructureStateAccessor accessor) {
+            for (LegacyChunkBounds bound : limit.bounds()) {
+                int width = (bound.max().x - bound.min().x);
+                int depth = (bound.max().z - bound.min().z);
+                int d = Math.min(width, depth) / 6;
+                Holder<StructureSet> structureSet = level.registryAccess().getOrThrow(key);
+                List<Holder<StructureSet>> structureSets = new ArrayList<>(genState.possibleStructureSets());
+                if (structureSet.value().placement() instanceof RandomSpreadStructurePlacement old && structureSets.remove(structureSet)) {
+                    if (alwaysPlace) {
+                        for (StructureSet.StructureSelectionEntry structure : structureSet.value().structures()) {
+                            structureSets.add(Holder.direct(new StructureSet(List.of(structure), new LimitedRandomStructurePlacement(old.spacing(), Math.max(old.separation(), old.spacing() - d), old.spreadType(), ((StructurePlacementAccessor) old).getSalt() / structure.weight(), List.of(structure), genState, bound))));
+                        }
+                    } else {
+                        structureSets.add(Holder.direct(new StructureSet(structureSet.value().structures(), new LimitedRandomStructurePlacement(old.spacing(), Math.max(old.separation(), old.spacing() - d), old.spreadType(), ((StructurePlacementAccessor) old).getSalt(), structureSet.value().structures(), genState, bound))));
+                    }
+                }
+                accessor.setHasGeneratedPositions(false);
+                accessor.getPlacementsForStructure().clear();
+                accessor.setPossibleStructureSets(ImmutableList.<Holder<StructureSet>>builder().addAll(structureSets).build());
+                return;
+            }
+        }
+    }
+
+    public static void setupConcentricStructureValidPlacement(LegacyLevelLimit limit, Level level, ChunkGeneratorStructureState genState, ResourceKey<StructureSet> key, HolderSet<Biome> biomes) {
+        if (limit != null && genState instanceof ChunkGeneratorStructureStateAccessor accessor) {
+            for (LegacyChunkBounds bound : limit.bounds()) {
+                Holder<StructureSet> structureSet = level.registryAccess().getOrThrow(key);
+                List<Holder<StructureSet>> structures = new ArrayList<>(genState.possibleStructureSets());
+                if (structureSet.value().placement() instanceof ConcentricRingsStructurePlacement old && structures.remove(structureSet)) {
+                    int width = (bound.max().x - bound.min().x);
+                    int depth = (bound.max().z - bound.min().z);
+                    int d = Math.min(width, depth);
+
+                    structures.add(Holder.direct(new StructureSet(structureSet.value().structures(), new ConcentricRingsStructurePlacement(Math.min(old.distance(), d / 12), old.spread(), Math.min(old.count(), Math.max(d / 52, 1)), biomes))));
                     accessor.setHasGeneratedPositions(false);
                     accessor.getPlacementsForStructure().clear();
                     accessor.setPossibleStructureSets(ImmutableList.<Holder<StructureSet>>builder().addAll(structures).build());
-                    return;
                 }
+                return;
             }
         }
     }
@@ -317,5 +372,81 @@ public class LWSWorldOptions {
         }
 
         return builder.build();
+    }
+
+    public static class LimitedRandomStructurePlacement extends RandomSpreadStructurePlacement {
+        private final List<StructureSet.StructureSelectionEntry> structures;
+
+        private final ChunkGeneratorStructureState structureState;
+        private final LegacyChunkBounds bounds;
+        private final HashMap<ChunkPos, ChunkPos> validPositions = new HashMap<>();
+
+        public LimitedRandomStructurePlacement(int i, int j, RandomSpreadType randomSpreadType, int k, List<StructureSet.StructureSelectionEntry> structures, ChunkGeneratorStructureState structureState, LegacyChunkBounds bounds) {
+            super(i, j, randomSpreadType, k);
+            this.structures = structures;
+            this.structureState = structureState;
+            this.bounds = bounds;
+        }
+
+        @Override
+        public ChunkPos getPotentialStructureChunk(long l, int i, int j) {
+            ChunkPos relative = validPositions.computeIfAbsent(new ChunkPos(Math.floorDiv(i, spacing()), Math.floorDiv(j, spacing())), spacedPos -> {
+                WorldgenRandom worldgenRandom = new WorldgenRandom(new LegacyRandomSource(0L));
+                List<StructureSet.StructureSelectionEntry> actualStructures = new ArrayList<>(structures);
+                int totalWeight = 0;
+
+                for (StructureSet.StructureSelectionEntry structureSelectionEntry2 : structures) {
+                    totalWeight += structureSelectionEntry2.weight();
+                }
+                worldgenRandom.setLargeFeatureWithSalt(l, spacedPos.x, spacedPos.z, this.salt());
+                RandomSource fork = worldgenRandom.fork();
+                int n = spacing() - separation();
+                ChunkPos pos = ChunkPos.ZERO;
+                while (!actualStructures.isEmpty()) {
+                    int index = 0;
+
+                    if (actualStructures.size() > 1) {
+                        int weight = fork.nextInt(totalWeight);
+                        for (StructureSet.StructureSelectionEntry structureSelectionEntry3 : actualStructures) {
+                            weight -= structureSelectionEntry3.weight();
+                            if (weight < 0) {
+                                break;
+                            }
+
+                            index++;
+                        }
+                    }
+                    StructureSet.StructureSelectionEntry entry = actualStructures.get(index);
+
+                    int o = spreadType().evaluate(worldgenRandom, n);
+                    int p = spreadType().evaluate(worldgenRandom, n);
+                    pos = new ChunkPos(spacedPos.x * spacing() + o, spacedPos.z * spacing() + p);
+
+                    if (bounds.isInside(pos.x, pos.z)) {
+                        BiomeSource biomeSource = ((ChunkGeneratorStructureStateAccessor) structureState).getBiomeSource();
+                        HolderSet<Biome> biomes = entry.structure().value().biomes();
+
+                        for (BlockPos.MutableBlockPos blockPos : BlockPos.spiralAround(new BlockPos(pos.x, 0, pos.z), spacing(), Direction.EAST, Direction.SOUTH)) {
+                            if (bounds.isInside(blockPos.getX(), blockPos.getZ()) && biomes.contains(biomeSource.getNoiseBiome(QuartPos.fromSection(blockPos.getX()), QuartPos.fromBlock(60), QuartPos.fromSection(blockPos.getZ()), structureState.randomState().sampler()))) {
+                                LegacyWorldSizes.LOGGER.warn("Found biome for {} at {}, {}, starting on {}, {}, spaced by {}, {}, using {}", entry.structure().unwrapKey().get().location(), blockPos.getX(), blockPos.getZ(), pos.x, pos.z, spacedPos.x, spacedPos.z, n);
+                                return new ChunkPos(blockPos.getX(), blockPos.getZ());
+                            }
+                        }
+                    }
+                    actualStructures.remove(index);
+                    totalWeight -= entry.weight();
+                }
+                //LegacyWorldSizes.LOGGER.warn("Couldn't find biome for {} starting on {}, {}, spaced by {}, {}, using {}", structures.get(0), pos.x, pos.z, spacedPos.x, spacedPos.z, n);
+                return pos;
+            });
+
+            if (relative.x == i && relative.z == j) return relative;
+
+            for (ChunkPos value : validPositions.values()) {
+                if (value.x == i && value.z == j) return value;
+            }
+
+            return relative;
+        }
     }
 }

@@ -1,6 +1,7 @@
 package wily.legacy_world_sizes.mixin.base;
 
 import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
@@ -23,6 +24,9 @@ public interface ChunkGeneratorStructureStateAccessor {
 
     @Accessor
     long getConcentricRingsSeed();
+
+    @Accessor
+    BiomeSource getBiomeSource();
 
     @Accessor
     Map<Structure, List<StructurePlacement>> getPlacementsForStructure();

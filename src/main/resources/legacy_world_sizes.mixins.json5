@@ -39,7 +39,12 @@
     "SettingsAccessor",
     "ChunkMapMixin",
     "NoiseParametersMixin",
-    "NormalNoiseMixin"
+    "NormalNoiseMixin",
+    "ChunkGeneratorStructureStateMixin",
+    "StructurePlacementAccessor",
+    "WoodlandMansionStructureMixin",
+    "StructureMixin",
+    "ChunkGeneratorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

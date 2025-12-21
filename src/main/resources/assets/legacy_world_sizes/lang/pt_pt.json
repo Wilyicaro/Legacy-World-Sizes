@@ -1,4 +1,5 @@
 {
+  "legacy_world_sizes.options": "Opções de LWS",
   "legacy_world_sizes.options.legacyWorldSize": "Tamanho do Mundo",
   "legacy_world_sizes.options.legacyWorldSize.description": "Seleciona um tamanho de mundo para variar quanto do mundo você pode explorar.",
   "legacy_world_sizes.options.legacyBiomeScale": "Escala do bioma",

@@ -161,8 +161,8 @@ public record LegacyChunkBounds(ChunkPos min, ChunkPos max, VoxelShape shape) {
     }
 
     public ChunkPos findExitPortalXZPosTentative(ServerLevel serverLevel) {
-        for (int x = min().x; x < max().x; x++) {
-            for (int z = min().z; z < max().z; z++) {
+        for (int x = min().x + 1; x < max().x; x++) {
+            for (int z = min().z + 1; z < max().z; z++) {
                 if (serverLevel.getChunk(x, z).getHighestFilledSectionIndex() != -1)
                     return new ChunkPos(x, z);
             }

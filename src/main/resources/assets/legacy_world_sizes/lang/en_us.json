@@ -1,4 +1,5 @@
 {
+  "legacy_world_sizes.options": "Legacy World Sizes Options",
   "legacy_world_sizes.options.legacyWorldSize": "World Size",
   "legacy_world_sizes.options.legacyWorldSize.description": "Select a world size to vary the amount of the world that you can explore.",
   "legacy_world_sizes.options.legacyBiomeScale": "Biome Scale",

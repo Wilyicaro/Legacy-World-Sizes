@@ -11,10 +11,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
 import wily.legacy_world_sizes.util.LegacyChunkBounds;
 import wily.legacy_world_sizes.util.LegacyLevelLimit;
-import wily.legacy_world_sizes.util.LevelWorldBorder;
+import wily.legacy_world_sizes.util.LevelHolder;
 
 @Mixin(WorldBorder.class)
-public class WorldBorderMixin implements LevelWorldBorder {
+public class WorldBorderMixin implements LevelHolder {
     @Unique
     private Level level;
 

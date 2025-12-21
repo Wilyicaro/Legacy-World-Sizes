@@ -4,7 +4,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import wily.factoryapi.FactoryAPI;
-import wily.legacy_world_sizes.config.LegacyMixinToggles;
+import wily.legacy_world_sizes.config.LWSMixinToggles;
 
 import java.util.List;
 import java.util.Set;
@@ -12,7 +12,7 @@ import java.util.Set;
 public class LWSMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String mixinPackage) {
-        LegacyMixinToggles.COMMON_STORAGE.load();
+        LWSMixinToggles.COMMON_STORAGE.load();
     }
 
     @Override
