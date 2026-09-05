@@ -70,11 +70,11 @@ minecraft {
 	runs {
 		configureEach {
 			workingDir.convention(layout.projectDirectory.dir("run"))
+			args("--mixin.config", "${prop("mod_id")}.mixins.json")
 		}
 
 		register("client") {
 			systemProperty("forge.enabledGameTestNamespaces", prop("mod_id"))
-			args("--mixin.config", "${prop("mod_id")}.mixins.json")
 //			client()
 //			gameDirectory = file("run/")
 //			ideName = "Forge Client (${stonecutter.active?.version})"

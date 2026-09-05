@@ -20,7 +20,7 @@ public class MinecraftServerMixin {
         return LevelHolder.withLevel(original, level);
     }
 
-    @Inject(method = "runServer", at = @At("HEAD"))
+    @Inject(method = "runServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;initServer()Z"))
     private void init(CallbackInfo ci) {
         LegacyWorldSizes.serverStarting((MinecraftServer) (Object) this);
     }

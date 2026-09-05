@@ -112,6 +112,10 @@ public class LWSWorldOptions {
 
     public static final FactoryConfig<LegacyWorldSize> legacyWorldSize = buildAndRegister(b -> b.key("legacyWorldSize").control(new FactoryConfigControl.FromInt<>(LegacyWorldSize.CODEC, LegacyWorldSize.map::getByIndex, LegacyWorldSize.map::indexOf, LegacyWorldSize.map::size)).defaultValue(LegacyWorldSize.CUSTOM), FactoryConfigDisplay.<LegacyWorldSize>builder().valueToComponent(LegacyWorldSize::name).tooltip(LWSComponents.staticTooltip(LWSComponents.optionName("legacyWorldSize.description"))));
 
+    public static final FactoryConfig<LegacyWorldSize> appliedLegacyWorldSize = buildAndRegister(b -> b.key("appliedLegacyWorldSize").control(new FactoryConfigControl.FromInt<>(LegacyWorldSize.CODEC, LegacyWorldSize.map::getByIndex, LegacyWorldSize.map::indexOf, LegacyWorldSize.map::size)).defaultValue(LegacyWorldSize.CUSTOM));
+
+    public static final FactoryConfig<Boolean> overwriteWorldEdge = buildAndRegister(b -> b.key("overwriteWorldEdge").control(FactoryConfigControl.TOGGLE).defaultValue(false), FactoryConfigDisplay.toggleBuilder().tooltip(LWSComponents.staticTooltip(LWSComponents.optionName("overwriteWorldEdge.description"))));
+
     public static final FactoryConfig<LegacyBiomeScale.AddOctave> addToBiomeFirstOctave = buildAndRegister(b -> b.key("addToBiomeFirstOctave").control(FactoryConfigControl.of(LegacyBiomeScale.AddOctave.CODEC)).defaultValue(LegacyBiomeScale.AddOctave.ZERO));
 
     public static final FactoryConfig<LegacyBiomeScale> legacyBiomeScale = buildAndRegister(b -> b.key("legacyBiomeScale").control(new FactoryConfigControl.FromInt<>(LegacyBiomeScale.CODEC, LegacyBiomeScale.map::getByIndex, LegacyBiomeScale.map::indexOf, LegacyBiomeScale.map::size)).defaultValue(LegacyBiomeScale.CUSTOM), FactoryConfigDisplay.<LegacyBiomeScale>builder().valueToComponent(LegacyBiomeScale::name).tooltip(LWSComponents.staticTooltip(LWSComponents.optionName("legacyBiomeScale.description"))));
@@ -183,7 +187,23 @@ public class LWSWorldOptions {
     }
 
     public static void setupLegacyWorldSize(RegistryAccess access) {
+        setupLegacyWorldSize(access, false);
+    }
+
+    public static void setupLegacyWorldSize(RegistryAccess access, boolean preserveEnd) {
+        LegacyLevelLimit end = preserveEnd ? legacyLevelLimits.get().get(Level.END) : null;
+        int gateways = maxEndGateways.get();
+        int islandsRay = endOuterIslandsRay.get();
+        BlockPos spawnPoint = endSpawnPoint.get();
+        boolean spikes = legacyEndSpikes.get();
         legacyWorldSize.get().applier().accept(new LegacyWorldSize.ApplyContext(access));
+        if (end != null) {
+            legacyLevelLimits.set(ImmutableMap.<ResourceKey<Level>, LegacyLevelLimit>builder().putAll(legacyLevelLimits.get()).put(Level.END, end).buildKeepingLast());
+            maxEndGateways.set(gateways);
+            endOuterIslandsRay.set(islandsRay);
+            endSpawnPoint.set(spawnPoint);
+            legacyEndSpikes.set(spikes);
+        }
         legacyBiomeScale.get().applyToAddToBiomeFirstOctave();
         addToBiomeFirstOctave.get().applyToBiomeNoiseParameters(access);
     }
