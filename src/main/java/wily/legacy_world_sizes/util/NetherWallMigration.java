@@ -7,10 +7,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
-import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -45,7 +45,7 @@ public class NetherWallMigration {
         LevelHeightAccessor height = LevelHeightAccessor.create(dimension.minY(), dimension.height());
         NoiseGeneratorSettings settings = generator instanceof NoiseBasedChunkGenerator noise ? noise.generatorSettings().value() : NoiseGeneratorSettings.dummy();
         RandomState randomState = RandomState.create(settings, server.registryAccess().lookupOrThrow(Registries.NOISE), server.getWorldGenSettings().options().seed());
-        WallReplacement replacement = new WallReplacement(generator, height, randomState, randomState.getOrCreateRandomFactory(LegacyChunkBounds.BEDROCK_WALLS_RANDOM), PalettedContainerFactory.create(server.registryAccess()).blockStatesContainerCodec());
+        WallReplacement replacement = new WallReplacement(generator, height, settings.defaultBlock(), randomState.getOrCreateRandomFactory(LegacyChunkBounds.BEDROCK_WALLS_RANDOM), PalettedContainerFactory.create(server.registryAccess()).blockStatesContainerCodec());
         RegionStorageInfo info = new RegionStorageInfo(server.getWorldData().getLevelName(), Level.NETHER, "chunk");
         Set<ChunkPos> seen = new LinkedHashSet<>();
         int count = 0;
@@ -67,13 +67,13 @@ public class NetherWallMigration {
             }
             storage.flush();
         }
+        OverworldEdgeDeletion.stampBlending(path, info, seen, dimension);
         return count;
     }
 
-    private record WallReplacement(ChunkGenerator generator, LevelHeightAccessor height, RandomState randomState, PositionalRandomFactory wallRandom, Codec<PalettedContainer<BlockState>> statesCodec) {
+    private record WallReplacement(ChunkGenerator generator, LevelHeightAccessor height, BlockState ground, PositionalRandomFactory wallRandom, Codec<PalettedContainer<BlockState>> statesCodec) {
         private boolean clean(CompoundTag chunk, ChunkPos pos, LegacyChunkBounds bounds) throws IOException {
             ListTag sections = chunk.getList("sections").orElseThrow(() -> new IOException("Missing Nether chunk sections at " + pos));
-            NoiseColumn[] columns = new NoiseColumn[256];
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
             int floor = Math.max(height.getMinY(), generator.getMinY());
             int roof = generator instanceof FlatLevelSource ? height.getMaxY() + 1 : Math.min(height.getMaxY() + 1, generator.getMinY() + generator.getGenDepth());
@@ -87,20 +87,18 @@ public class NetherWallMigration {
                 boolean sectionChanged = false;
                 for (int dx = 0; dx < 16; dx++) {
                     int x = pos.getMinBlockX() + dx;
+                    int sampleX = Mth.clamp(x, bounds.min().getMinBlockX() + 5, bounds.max().getMinBlockX() - 6) - pos.getMinBlockX();
                     for (int dz = 0; dz < 16; dz++) {
                         int z = pos.getMinBlockZ() + dz;
+                        int sampleZ = Mth.clamp(z, bounds.min().getMinBlockZ() + 5, bounds.max().getMinBlockZ() - 6) - pos.getMinBlockZ();
                         for (int dy = 0; dy < 16; dy++) {
                             int y = sectionY + dy;
                             if (y < floor + 5 || y >= roof - 5 && y < roof || !states.get(dx, dy, dz).is(Blocks.BEDROCK)) continue;
                             blockPos.set(x, y, z);
                             int thickness = wallRandom.at(blockPos).nextInt(5);
                             if (x > bounds.min().getMinBlockX() + thickness && z > bounds.min().getMinBlockZ() + thickness && x < bounds.max().getMinBlockX() - 1 - thickness && z < bounds.max().getMinBlockZ() - 1 - thickness) continue;
-                            int columnIndex = dz * 16 + dx;
-                            NoiseColumn column = columns[columnIndex];
-                          
-                            if (column == null) columns[columnIndex] = column = generator.getBaseColumn(x, z, height, randomState);
-                            BlockState state = column.getBlock(y);
-                            if (state.is(Blocks.BEDROCK)) continue;
+                            BlockState sample = states.get(sampleX, dy, sampleZ);
+                            BlockState state = sample.canOcclude() ? ground : sample.getFluidState().createLegacyBlock();
                             states.set(dx, dy, dz, state);
                             sectionChanged = true;
                         }

@@ -1,6 +1,8 @@
 package wily.legacy_world_sizes.util;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -38,7 +40,7 @@ public class OverworldEdgeDeletion {
         int count = deleteChunks(path.resolve("region"), new RegionStorageInfo(name, Level.OVERWORLD, "chunk"), deleted);
         deleteChunks(path.resolve("entities"), new RegionStorageInfo(name, Level.OVERWORLD, "entities"), deleted);
         deleteChunks(path.resolve("poi"), new RegionStorageInfo(name, Level.OVERWORLD, "poi"), deleted);
-        stampBlending(server, path.resolve("region"), new RegionStorageInfo(name, Level.OVERWORLD, "chunk"), retained);
+        stampBlending(path.resolve("region"), new RegionStorageInfo(name, Level.OVERWORLD, "chunk"), retained, server.registryAccess().getOrThrow(LevelStem.OVERWORLD).value().type().value());
         return count;
     }
 
@@ -59,12 +61,16 @@ public class OverworldEdgeDeletion {
         return count;
     }
 
-    private static void stampBlending(MinecraftServer server, Path path, RegionStorageInfo info, Set<ChunkPos> chunks) throws IOException {
+    static void stampBlending(Path path, RegionStorageInfo info, Set<ChunkPos> chunks, DimensionType dimension) throws IOException {
         if (!Files.isDirectory(path)) return;
-        DimensionType dimension = server.registryAccess().getOrThrow(LevelStem.OVERWORLD).value().type().value();
         CompoundTag blending = new CompoundTag();
         blending.putInt("min_section", Math.floorDiv(dimension.minY(), 16));
         blending.putInt("max_section", Math.floorDiv(dimension.minY() + dimension.height(), 16));
+        if (info.dimension() == Level.NETHER) {
+            ListTag heights = new ListTag();
+            for (int i = 0; i < 16; i++) heights.add(DoubleTag.valueOf(dimension.minY() + dimension.height()));
+            blending.put("heights", heights);
+        }
         try (RegionFileStorage storage = RegionFileStorageAccessor.lws$create(info, path, true)) {
             for (ChunkPos pos : chunks) {
                 if (!Files.isRegularFile(regionPath(path, pos))) continue;
