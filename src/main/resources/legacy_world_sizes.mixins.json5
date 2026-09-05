@@ -13,6 +13,8 @@
   ],
   "mixins": [
     "StructureManagerAccessor",
+    "RegionFileStorageAccessor",
+    "WorldGenRegionMixin",
     "BlenderMixin",
     "EntityMixin",
     "NoiseBasedChunkGeneratorMixin",

@@ -18,6 +18,7 @@ import wily.legacy_world_sizes.config.LWSMixinToggles;
 import wily.legacy_world_sizes.config.LWSWorldOptions;
 import wily.legacy_world_sizes.init.LWSRegistries;
 import wily.legacy_world_sizes.level.FakeLevelChunk;
+import wily.legacy_world_sizes.util.WorldSizeUpgrade;
 
 //? if fabric {
 //?} else if forge {
@@ -106,11 +107,12 @@ public class LegacyWorldSizes {
     }
 
     public static void serverStarting(MinecraftServer server) {
-        LWSWorldOptions.WORLD_STORAGE.withServerFile(server, "config/legacy_world_sizes.json").resetAndLoad();
-        LWSWorldOptions.setupLegacyWorldSize(server.registryAccess());
+        WorldSizeUpgrade.loadAndUpgrade(server);
+        LWSWorldOptions.setupLegacyWorldSize(server.registryAccess(), server.getWorldData().overworldData().isInitialized());
         LWSWorldOptions.setupEndLimits();
         if (server instanceof DedicatedServer dedicatedServer)
             LWSWorldOptions.setupDedicatedServerBalancedSeed(dedicatedServer);
+        WorldSizeUpgrade.finish();
     }
 
     public static void onServerStart(MinecraftServer server) {
@@ -122,6 +124,6 @@ public class LegacyWorldSizes {
     }
 
     public static void onResourcesReload(PlayerList playerList) {
-        LWSWorldOptions.setupLegacyWorldSize(playerList.getServer().registryAccess());
+        LWSWorldOptions.setupLegacyWorldSize(playerList.getServer().registryAccess(), true);
     }
 }
